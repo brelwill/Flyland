@@ -1,0 +1,575 @@
+---
+title: "Flyland"
+output: html_notebook
+---
+install packages
+```{r eval=FALSE, include=FALSE}
+library(devtools)
+install_github("rethomics/behavr")
+install_github("rethomics/damr")
+install_github("rethomics/ggetho")
+install_github("rethomics/zeitgebr")
+```
+
+load packages
+```{r}
+library(zeitgebr)
+library(ggetho)
+library(sleepr)
+```
+
+Load package and workspace
+```{r}
+library(behavr)
+setwd("C:/Users/bwillia/Desktop/Flyland-ALL")
+DATA_DIR <- "C:/Users/bwillia/Desktop/Flyland-ALL"
+list.files(DATA_DIR, pattern= "*.txt|*.csv")
+setwd(DATA_DIR)
+```
+Metadata
+```{r}
+library(damr)
+metadata <- fread("flyland_metadata.csv")
+metadata
+```
+Linking
+```{r}
+metadata <- link_dam_metadata(metadata, result_dir = DATA_DIR)
+metadata
+```
+Loading BASELINE flies
+```{r eval=FALSE, include=FALSE}
+FL_baseline <- load_dam(metadata[status == "BASELINE"])
+```
+
+
+Loading FL3
+```{r}
+#FLM_dt <- load_dam(metadata[status == "OK" & sex == "M" & generation == "FL3" & Date %in% c("180718", "180724", "180725")], FUN = sleepr::sleep_dam_annotation)
+
+#FLF_dt <- load_dam(metadata[status == "OK"& sex == "F"& generation == "FL3" & Date %in% c("180718", "180724", "180725")], FUN = sleepr::sleep_dam_annotation)
+
+#saveRDS(FLM_dt, file = "FL3_M_dt.RDS")
+#saveRDS(FLF_dt, file = "FL3_F_dt.RDS")
+
+FL3M_dt <- readRDS("FL3_M_dt.RDS")
+FL3F_dt <- readRDS("FL3_F_dt.RDS")
+```
+Loading FL4
+```{r}
+#FLM_dt <- load_dam(metadata[status == "OK" & sex == "M" & generation == "FL4" & Date %in% c("180717", "180718","180724","180731","180801","180807", "180808")], FUN = sleepr::sleep_dam_annotation)
+#FLF_dt <- load_dam(metadata[status == "OK"& sex == "F"& generation == "FL4" & Date %in% c("180717", "180718","180724","180731","180801","180807", "180808")], FUN = sleepr::sleep_dam_annotation)
+
+#saveRDS(FLM_dt, file = "FL4_M_dt.RDS")
+#saveRDS(FLF_dt, file = "FL4_F_dt.RDS")
+
+FL4M_dt <- readRDS("FL4_M_dt.RDS")
+FL4F_dt <- readRDS("FL4_F_dt.RDS")
+```
+Loading FL5
+```{r}
+#FLM_dt <- load_dam(metadata[status == "OK" & sex == "M" & generation == "FL5" & Date %in% c("180814", "180815", "180821", "180822")], FUN = sleepr::sleep_dam_annotation)
+#FLF_dt <- load_dam(metadata[status == "OK" & sex == "F" & generation == "FL5" & Date %in% c("180814", "180815", "180821", "180822")], FUN = sleepr::sleep_dam_annotation)
+
+#saveRDS(FLM_dt, file = "FL5_M_dt.RDS")
+#saveRDS(FLF_dt, file = "FL5_F_dt.RDS")
+
+FL5M_dt <- readRDS("FL5_M_dt.RDS")
+FL5F_dt <- readRDS("FL5_F_dt.RDS")
+```
+Loading FL6
+```{r}
+#FLM_dt <- load_dam(metadata[status == "OK" & sex == "M" & generation == "FL6" & Date %in% c("180821", "180822", "180828", "180829")], FUN = sleepr::sleep_dam_annotation)
+#FLF_dt <- load_dam(metadata[status == "OK" & sex == "F" & generation == "FL6" & Date %in% c("180821", "180822", "180828", "180829")], FUN = sleepr::sleep_dam_annotation)
+
+#saveRDS(FLM_dt, file = "FL6_M_dt.RDS")
+#saveRDS(FLF_dt, file = "FL6_F_dt.RDS")
+
+FL6M_dt <- readRDS("FL6_M_dt.RDS")
+FL6F_dt <- readRDS("FL6_F_dt.RDS")
+```
+
+
+
+UID
+```{r}
+#FL_baseline[, uid := paste(Monitor, Date, region_id, sep = "."), meta=T]
+#FL_baseline[, .(id, uid) ,meta=T]
+
+FL6M_dt[, uid := paste(Monitor, Date, region_id, sep = "."), meta=T]
+FL6M_dt[, .(id, uid) ,meta=T]
+FL6F_dt[, uid := paste(Monitor, Date, region_id, sep = "."), meta=T]
+FL6F_dt[, .(id, uid) ,meta=T]
+```
+
+```{r}
+rejoin(FL6M_dt)
+rejoin(FL6F_dt)
+
+FL6M_dt
+FL6F_dt
+```
+```{r eval=FALSE, include=FALSE}
+rejoin(FL_baseline)
+FL_baseline
+```
+
+Remove dead animals
+```{r}
+library(sleepr)
+FLM_curated <- curate_dead_animals(FL3M_dt)
+summary(FLM_curated)
+FLF_curated <- curate_dead_animals(FL3F_dt)
+summary(FLF_curated)
+```
+See who is ded
+```{r}
+setdiff(FL3M_dt[, id, meta=T],
+        FLM_curated[, id, meta=T])
+setdiff(FL3F_dt[, id, meta=T],
+        FLF_curated[, id, meta=T])
+```
+
+```{r eval=FALSE, include=FALSE}
+LifespanM <- FLM_curated[xmv(drug_condit) == "5AMPH"]
+
+
+LifespanF <- FLF_curated[xmv(drug_condit) == "5AMPH"]
+
+```
+
+```{r eval=FALSE, include=FALSE}
+library(ggetho)
+LifeM <- ggetho(LifespanM, aes(x= t, y= id, z=moving)) +
+      stat_tile_etho()
+      
+LifeM
+ggsave("FL4M.png", plot = LifeM, device = "png", width = 30, height = 300, units = "cm", limitsize = FALSE)
+
+
+LifeF<- ggetho(LifespanF, aes(x= t, y= id, z=moving)) +
+      stat_tile_etho()
+      
+LifeF
+ggsave("FL4F.png", plot = LifeF, device = "png", width = 30, height = 300, units = "cm", limitsize = FALSE)
+
+
+```
+
+
+FL Baseline flies
+```{r}
+#FL_baseline_bin <- bin_apply_all(FL_baseline,
+#                    activity,
+#                    x = t,
+#                    x_bin_length = mins(60),
+#                    FUN = sum)
+#FL_baseline_binned <- rejoin(FL_baseline_bin)
+```
+
+FL3 bin over 60 min
+```{r}
+FL3M_dt_bin <- rejoin(bin_apply_all(FL3M_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+
+FL3F_dt_bin <- rejoin(bin_apply_all(FL3F_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+```
+
+FL4 bin over 60 min
+```{r}
+FL4M_dt_bin <- rejoin(bin_apply_all(FL4M_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+
+FL4F_dt_bin <- rejoin(bin_apply_all(FL4F_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+```
+
+FL5 bin over 60 min
+```{r}
+FL5M_dt_bin <- rejoin(bin_apply_all(FL5M_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+
+FL5F_dt_bin <- rejoin(bin_apply_all(FL5F_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+```
+
+FL6 bin over 60 min
+```{r}
+FL6M_dt_bin <- rejoin(bin_apply_all(FL6M_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+
+FL6F_dt_bin <- rejoin(bin_apply_all(FL6F_dt,
+                  activity,
+                  x = t,
+                  x_bin_length = mins(60),
+                  FUN = sum))
+
+```
+
+
+Male Activity Plots
+```{r}
+library(ggplot2)
+
+mean.act.FL6M <- FL6M_dt_bin[, .(mean_act = mean(activity)),
+                                # = std.error(activity)),
+                                by = .(uid, drug_condit, t)]
+
+
+mean.act.FL6M <- mean.act.FL6M[mean.act.FL6M$uid %in% c(
+"20.180821.16",
+"35.180822.13",
+"13.180828.16"
+
+)]
+                  
+
+# plot
+actplot_TopFL6M<- ggplot(mean.act.FL6M, aes(x= t)) + 
+  geom_line(aes(y= mean_act, col= drug_condit)) + 
+  labs(title="Top 10% Sample", 
+       subtitle="FL6 Males", 
+       caption="Mean activity per 12 hrs",
+       y = "Mean Activity",
+       color=NULL) +  # title and caption
+  scale_color_manual(labels = c("0AMPH", "5AMPH"), 
+                     values = c("0AMPH"="#4169e1", 
+                                "5AMPH"="#00ba38"))+ # line color
+  scale_x_hours(name = "Time", breaks = waiver(),
+  minor_breaks = waiver(), labels = waiver(), limits = NULL,
+  expand = waiver(), oob = scales::censor, na.value = NA_real_,
+  position = "bottom", time_wrap = NULL, unit = "h", log = FALSE)+ # set x axis scale
+  
+  scale_y_continuous(limits = c(0, 1500)) + # set y axis scale
+  
+  #geom_errorbar(aes(ymin=mean_act-sem, ymax=mean_act+sem), width=.2,
+                # position=position_dodge(0.05))+ # error bars
+  facet_grid(rows = vars(uid), cols = NULL, scales = "fixed",
+  space = "fixed", shrink = TRUE, labeller = "label_value",
+  as.table = TRUE, switch = NULL, drop = TRUE, margins = FALSE,
+  facets = NULL)+
+
+  theme(axis.text.x = element_text(angle = 45, vjust=0.5, size = 8)) # rotate x axis text
+    
+
+ggsave("TopFL6M_actplot.png", plot = actplot_TopFL6M, device = "png", width = 11 , height = 7, units = "in")
+
+actplot_TopFL6M
+```
+Female Activity Plots
+```{r}
+library(ggplot2)
+
+mean.act.FL6F <- FL6F_dt_bin[, .(mean_act = mean(activity)),
+                                # = std.error(activity)),
+                                by = .(uid, drug_condit, t)]
+
+
+mean.act.FL6F <- mean.act.FL6F[mean.act.FL6F$uid %in% c(
+"17.180821.23",
+"29.180822.17",
+"6.180828.27",
+"22.180829.9"
+
+  )]
+
+
+# plot
+actplot_TopFL6F<- ggplot(mean.act.FL6F, aes(x= t)) + 
+  geom_line(aes(y= mean_act, col= drug_condit)) + 
+  labs(title="Top 10% Sample", 
+       subtitle="FL6 Females", 
+       caption="Mean activity per 12 hrs",
+       y = "Mean Activity",
+       color=NULL) +  # title and caption
+  scale_color_manual(labels = c("0AMPH", "5AMPH"), 
+                     values = c("0AMPH"="#4169e1", 
+                                "5AMPH"="#00ba38"))+ # line color
+  scale_x_hours(name = "Time", breaks = waiver(),
+  minor_breaks = waiver(), labels = waiver(), limits = NULL,
+  expand = waiver(), oob = scales::censor, na.value = NA_real_,
+  position = "bottom", time_wrap = NULL, unit = "h", log = FALSE)+ # set x axis scale
+  
+  scale_y_continuous(limits = c(0, 1500)) + # set y axis scale
+  
+  #geom_errorbar(aes(ymin=mean_act-sem, ymax=mean_act+sem), width=.2,
+                # position=position_dodge(0.05))+ # error bars
+  facet_grid(rows = vars(uid), cols = NULL, scales = "fixed",
+  space = "fixed", shrink = TRUE, labeller = "label_value",
+  as.table = TRUE, switch = NULL, drop = TRUE, margins = FALSE,
+  facets = NULL)+
+
+  theme(axis.text.x = element_text(angle = 45, vjust=0.5, size = 8)) # rotate x axis text
+    
+
+ggsave("TopFL6F_actplot.png", plot = actplot_TopFL6F, device = "png", width = 11 , height = 11, units = "in")
+
+actplot_TopFL6F
+```
+
+```{r}
+N1_avg <- FL_baseline_binned[t >= hours(7) & t <= hours(18), .(N1_avg = mean(activity)),
+                      by = .(drug_condit, uid)
+                      ]
+
+
+N1M_avg <- FLM_dt_binned[t >= hours(7) & t <= hours(18), .(N1_avg = mean(activity)),
+                      by = .(drug_condit, uid)
+                      ]
+
+
+
+N1F_avg <- FLF_dt_binned[t >= hours(7) & t <= hours(18), .(N1_avg = mean(activity)),
+                      by = .(drug_condit, uid)
+                      ]
+
+```
+
+```{r}
+FL_N1<- N1_avg[, Delta5 := N1_avg[drug_condit == "5AMPH"] - N1_avg, .(uid)][, Ratio5 := N1_avg[drug_condit == "5AMPH"] / N1_avg, .(uid)]
+
+FLM_N1<- N1M_avg[, Delta5 := N1_avg[drug_condit == "5AMPH"] - N1_avg, .(uid)][, Ratio5 := N1_avg[drug_condit == "5AMPH"] / N1_avg, .(uid)]
+
+FLF_N1<- N1F_avg[, Delta5 := N1_avg[drug_condit == "5AMPH"] - N1_avg, .(uid)][, Ratio5 := N1_avg[drug_condit == "5AMPH"] / N1_avg, .(uid)]
+```
+
+```{r}
+N1_0AMPH <- FL_N1[drug_condit == "0AMPH"]
+N1_5AMPH <- FL_N1[drug_condit == "5AMPH"]
+
+write.csv(N1_0AMPH, file = "N1_baseline.csv")
+write.csv(N1_5AMPH, file = "N1_baseline5.csv")
+
+
+N1_0AMPH_M <- FLM_N1[drug_condit == "0AMPH"]
+N1_5AMPH_M <- FLM_N1[drug_condit == "5AMPH"]
+
+N1_0AMPH_F <- FLF_N1[drug_condit == "0AMPH"]
+N1_5AMPH_F <- FLF_N1[drug_condit == "5AMPH"]
+
+```
+FL3
+```{r}
+write.csv(N1_0AMPH_M, file = "N1_0AMPH_M_FL3.csv")
+write.csv(N1_5AMPH_M, file = "N1_5AMPH_M_FL3.csv")
+
+write.csv(N1_0AMPH_F, file = "N1_0AMPH_F_FL3.csv")
+write.csv(N1_5AMPH_F, file = "N1_5AMPH_F_FL3.csv")
+
+```
+
+FL4
+```{r}
+write.csv(N1_0AMPH_M, file = "N1_0AMPH_M_FL4.csv")
+write.csv(N1_5AMPH_M, file = "N1_5AMPH_M_FL4.csv")
+
+write.csv(N1_0AMPH_F, file = "N1_0AMPH_F_FL4.csv")
+write.csv(N1_5AMPH_F, file = "N1_5AMPH_F_FL4.csv")
+```
+
+FL5
+```{r}
+write.csv(N1_0AMPH_M, file = "N1_0AMPH_M_FL5.csv")
+write.csv(N1_5AMPH_M, file = "N1_5AMPH_M_FL5.csv")
+
+write.csv(N1_0AMPH_F, file = "N1_0AMPH_F_FL5.csv")
+write.csv(N1_5AMPH_F, file = "N1_5AMPH_F_FL5.csv")
+```
+
+FL6
+```{r}
+write.csv(N1_0AMPH_M, file = "N1_0AMPH_M_FL6.csv")
+write.csv(N1_5AMPH_M, file = "N1_5AMPH_M_FL6.csv")
+
+write.csv(N1_0AMPH_F, file = "N1_0AMPH_F_FL6.csv")
+write.csv(N1_5AMPH_F, file = "N1_5AMPH_F_FL6.csv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Check lifespan
+```{r}
+# we make a summary table of all lifespan for each animals
+Mlifespan_dt <- FLM_curated[drug_condit == "5AMPH", .(lifespan = max(t)), by= id]
+Flifespan_dt <- FLF_curated[drug_condit == "5AMPH", .(lifespan = max(t)), by= id]
+```
+Remove flies who died within 68 hrs (3days)
+```{r}
+# we filter this table for lifespan>2 and we keep the id
+Mvalid_ids <- Mlifespan_dt[lifespan > hours(68), id]
+Fvalid_ids <- Flifespan_dt[lifespan > hours(68), id]
+
+# we apply this filter
+FLM_curated2 <- FLM_curated[id %in% Mvalid_ids]
+FLF_curated2 <- FLF_curated[id %in% Fvalid_ids]
+```
+
+
+```{r}
+setdiff(FLM_curated[, id, meta=T],
+        FLM_curated2[, id, meta=T])
+setdiff(FLF_curated[, id, meta=T],
+        FLF_dt_curated2[, id, meta=T])
+```
+
+
+
+
+
+```{r}
+FLM_N1<- N1M_MeanAct[, Delta5 := N1MeanAct[drug_condit == "5AMPH"] - N1MeanAct, .(uid)][, Ratio5 := N1MeanAct[drug_condit == "5AMPH"] / N1MeanAct, .(uid)]
+
+FLF_N1<- N1F_MeanAct[, Delta5 := N1MeanAct[drug_condit == "5AMPH"] - N1MeanAct, .(uid)][, Ratio5 := N1MeanAct[drug_condit == "5AMPH"] / N1MeanAct, .(uid)]
+```
+
+```{r}
+N1_0AMPH_M <- FLM_N1[drug_condit == "0AMPH"]
+N1_5AMPH_M <- FLM_N1[drug_condit == "5AMPH"]
+
+
+
+write.csv(N1_0AMPH_M, file = "N1_0AMPH_M.csv")
+write.csv(N1_5AMPH_M, file = "N1_5AMPH_M.csv")
+
+
+
+N1_0AMPH_F <- FLF_N1[drug_condit == "0AMPH"]
+N1_5AMPH_F <- FLF_N1[drug_condit == "5AMPH"]
+
+
+
+write.csv(N1_0AMPH_F, file = "N1_0AMPH_F.csv")
+write.csv(N1_5AMPH_F, file = "N1_5AMPH_F.csv")
+
+```
+
+
+
+
+
+```{r}
+library(zeitgebr)
+FLM_dt_bin[, t := ifelse(xmv(drug_condit) == "0AMPH", t, t * 1.01),]
+
+per_dt <- periodogram(activity, FLM_dt_bin, FUN = chi_sq_periodogram, resample_rate = 1/mins(5))
+ggperio(per_dt, aes(period, power, colour=drug_condit)) + 
+        stat_pop_etho()
+```
+
+
+
+
+
+Check lifespan
+```{r}
+#FLM_curated[, lifespan := max(t), by= id]
+#FLM_curated <- FLMcurated[, .(id, lifespan), meta=T]
+#FLF_curated[, lifespan := max(t), by= id]
+#FLF_curated[, .(id, lifespan), meta=T]
+
+#rejoin(FLM_curated)
+#rejoin(FLF_curated)
+```
+Subset 4day flies
+```{r}
+#FourDayFlies <- FLM_curated[xmv(Date) == c("180717", "180724", "180731", "181807", "180814", "180821", "180828", "180718", "180725")]
+#FourDayFlies_valid <- FourDayFlies[lifespan > hours(92), id]
+#FLM_curated2 <- FourDayFlies[id %in% FourDayFlies_valid]
+
+```
+See who was removed
+```{r}
+#setdiff(FourDayFlies[, id, meta=T],
+       # FLM_curated2[, id, meta=T])
+
+```
+
+**TRY THIS**
+```{r}
+# we make a summary table of all lifespan for each animals
+Mlifespan_dt <- FLM_curated[, .(lifespan = max(t)), by= id]
+Flifespan_dt <- FLF_curated[, .(lifespan = max(t)), by= id]
+
+
+MMetaLife <- FLM_curated[Mlifespan_dt, meta=T]
+setmeta(FLM_curated, MMetaLife)
+
+FMetaLife <- FLF_curated[Flifespan_dt, meta=T]
+setmeta(FLF_curated, FMetaLife)
+```
+Remove flies who died within 68 hrs (3days)
+```{r}
+# we filter this table for lifespan>2 and we keep the id
+Mvalid_ids <- Mlifespan_dt[lifespan > hours(68), id]
+Fvalid_ids <- Flifespan_dt[lifespan > hours(68), id]
+
+# we apply this filter
+FLM_curated2 <- FLM_curated[id %in% Mvalid_ids]
+FLF_curated2 <- FLF_curated[id %in% Fvalid_ids]
+
+
+```
+See who was removed
+```{r}
+setdiff(FLM_curated[, id, meta=T],
+        FLM_curated2[, id, meta=T])
+setdiff(FLF_curated[, id, meta=T],
+        FLF_dt_curated2[, id, meta=T])
+```
+
+```{r}
+##ThreeDayFliesM <- FLM_curated[xmv(Date) == c("181801", "180808", "180815", "180822", "180729")]
+
+##FourDayFliesF <- FLF_curated[xmv(Date) == c("180717", "180724", "180731", "181807", "180814", "180821", "180828", "180718", "180725")]
+##ThreeDayFliesF <- FLF_curated[xmv(Date) == c("181801", "180808", "180815", "180822", "180729")]
+```
+
+```{r}
+###N3M_avg <- FLM_dt_binned[t %between% c(hours(56), hours(67)), 
+###                       .(N3M_avg = mean(activity)),
+###                        by = .(drug_condit, uid)
+###                        ]
+###N3M_MeanAct <- N3M_avg[, .("N3MeanAct" = mean(activity)),
+###                 by = .(drug_condit, uid)]
+
+###N3F_avg <- FLF_dt_binned[t %between% c(hours(56), hours(67)), 
+###                       .(N3F_avg = mean(activity)),
+###                        by = .(drug_condit, uid)
+###                        ]
+###N3F_MeanAct <- N3F_avg[, .("N3MeanAct" = mean(activity)),
+###                 by = .(drug_condit, uid)]
+
+```
